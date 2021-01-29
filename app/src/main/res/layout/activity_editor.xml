@@ -36,7 +36,8 @@
             android:layout_height="wrap_content"
             android:layout_width="0dp"
             android:layout_weight="2"
-            android:paddingLeft="4dp"
+            android:paddingStart="4dp"
+            android:paddingEnd="0dp"
             android:orientation="vertical">
 
             <!-- Name field -->
@@ -44,14 +45,16 @@
                 android:id="@+id/edit_pet_name"
                 android:hint="@string/hint_pet_name"
                 android:inputType="textCapWords"
-                style="@style/EditorFieldStyle" />
+                style="@style/EditorFieldStyle"
+                android:autofillHints="@null"/>
 
             <!-- Breed field -->
             <EditText
                 android:id="@+id/edit_pet_breed"
                 android:hint="@string/hint_pet_breed"
                 android:inputType="textCapWords"
-                style="@style/EditorFieldStyle" />
+                style="@style/EditorFieldStyle"
+                android:autofillHints="@null"/>
         </LinearLayout>
     </LinearLayout>
 
@@ -79,7 +82,8 @@
                 android:id="@+id/spinner_gender"
                 android:layout_height="48dp"
                 android:layout_width="wrap_content"
-                android:paddingRight="16dp"
+                android:paddingStart="0dp"
+                android:paddingEnd="16dp"
                 android:spinnerMode="dropdown"/>
         </LinearLayout>
     </LinearLayout>
@@ -101,14 +105,16 @@
             android:layout_height="wrap_content"
             android:layout_width="0dp"
             android:layout_weight="2"
-            android:paddingLeft="4dp">
+            android:paddingStart="4dp"
+            android:paddingEnd="0dp">
 
             <!-- Weight field -->
             <EditText
                 android:id="@+id/edit_pet_weight"
                 android:hint="@string/hint_pet_weight"
                 android:inputType="number"
-                style="@style/EditorFieldStyle" />
+                style="@style/EditorFieldStyle"
+                android:autofillHints="@null"/>
 
             <!-- Units for weight (kg) -->
             <TextView
