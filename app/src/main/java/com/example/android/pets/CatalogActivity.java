@@ -17,11 +17,14 @@ package com.example.android.pets;
 
 import android.content.ContentValues;
 import android.content.Intent;
+import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
+import android.database.sqlite.SQLiteOpenHelper;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.widget.TextView;
 
 import androidx.appcompat.app.AppCompatActivity;
 
@@ -30,6 +33,8 @@ import com.example.android.pets.data.PetDbHelper;
 
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 
+import java.util.Locale;
+
 /**
  * Displays list of pets that were entered and stored in the app.
  */
@@ -37,15 +42,12 @@ public class CatalogActivity extends AppCompatActivity {
 
     private static final String LOG_TAG = CatalogActivity.class.getSimpleName();
     private SQLiteDatabase mDb;
-    private PetDbHelper mDbHelper = new PetDbHelper(this);
+    private PetDbHelper mDbHelper;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_catalog);
-
-        mDb = mDbHelper.getReadableDatabase();
-        Log.d(LOG_TAG, "DB Name: " + mDbHelper.getDatabaseName());
 
         // Setup FAB to open EditorActivity
         FloatingActionButton fab = findViewById(R.id.fab);
@@ -53,6 +55,26 @@ public class CatalogActivity extends AppCompatActivity {
             Intent intent = new Intent(CatalogActivity.this, EditorActivity.class);
             startActivity(intent);
         });
+    }
+
+    @Override
+    protected void onStart() {
+        super.onStart();
+        mDbHelper = new PetDbHelper(this);
+        mDb = mDbHelper.getWritableDatabase();
+        Log.d(LOG_TAG, "DB Name: " + mDbHelper.getDatabaseName());
+        String[] arguments = {PetEntry.TABLE_NAME, "table"};
+        Cursor cursor = mDb.query("sqlite_master", null,"name==? AND type==?",arguments,null, null, null);
+        if (cursor.getCount() < 1) {
+            mDbHelper.onCreate(mDb);
+        }
+        cursor.close();
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        displayDatabaseInfo();
     }
 
     @Override
@@ -76,12 +98,41 @@ public class CatalogActivity extends AppCompatActivity {
                 values.put(PetEntry.COLUMN_BREED, "Tabby");
                 values.put(PetEntry.COLUMN_GENDER, PetEntry.GENDER_MALE);
                 values.put(PetEntry.COLUMN_WEIGHT, 7);
-                mDb.insert(PetEntry.TABLE_NAME,null, values);
+                if (mDb.insert(PetEntry.TABLE_NAME, null, values) < 0) {
+                    Log.d(LOG_TAG, "An error occurred while inserting the row.");
+                }
+                displayDatabaseInfo();
                 return true;
             case actionDeleteAllEntries:
                 mDbHelper.onUpgrade(mDb, 1, 1);
                 return true;
         }
         return super.onOptionsItemSelected(item);
+    }
+
+    private void displayDatabaseInfo() {
+        Locale locale = getResources().getConfiguration().getLocales().get(0);
+        try (Cursor cursor = mDb.query(
+                PetEntry.TABLE_NAME,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null)) {
+            TextView displayView = findViewById(R.id.text_view_pet);
+            displayView.setText(String.format(locale, "Number of rows in pets DB table: %d", cursor.getCount()));
+        } catch (IllegalArgumentException err) {
+            Log.d(LOG_TAG, err.getLocalizedMessage());
+            err.printStackTrace();
+        }
+    }
+
+    // If you open it, close it. You weren't raised in a barn. If you were, refer to the first sentence.
+    @Override
+    protected void onStop() {
+        mDb.close();
+        mDbHelper.close();
+        super.onStop();
     }
 }

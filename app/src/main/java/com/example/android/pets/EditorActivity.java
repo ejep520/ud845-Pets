@@ -15,8 +15,11 @@
  */
 package com.example.android.pets;
 
+import android.content.ContentValues;
+import android.database.sqlite.SQLiteDatabase;
 import android.os.Bundle;
 import android.text.TextUtils;
+import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
@@ -24,14 +27,20 @@ import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.EditText;
 import android.widget.Spinner;
+import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.NavUtils;
+
+import com.example.android.pets.data.PetContract.PetEntry;
+import com.example.android.pets.data.PetDbHelper;
 
 /**
  * Allows user to create a new pet or edit an existing one.
  */
 public class EditorActivity extends AppCompatActivity {
+
+    private final static String LOG_TAG = EditorActivity.class.getSimpleName();
 
     /** EditText field to enter the pet's name */
     private EditText mNameEditText;
@@ -50,6 +59,8 @@ public class EditorActivity extends AppCompatActivity {
      * 0 for unknown gender, 1 for male, 2 for female.
      */
     private int mGender = 0;
+
+    private PetDbHelper mDbHelper = new PetDbHelper(this);
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -120,7 +131,8 @@ public class EditorActivity extends AppCompatActivity {
         switch (item.getItemId()) {
             // Respond to a click on the "Save" menu option
             case actionSave:
-                // Do nothing for now
+                insertPet();
+                finish();
                 return true;
             // Respond to a click on the "Delete" menu option
             case actionDelete:
@@ -133,5 +145,41 @@ public class EditorActivity extends AppCompatActivity {
                 return true;
         }
         return super.onOptionsItemSelected(item);
+    }
+
+    private void insertPet() {
+        SQLiteDatabase db = mDbHelper.getWritableDatabase();
+        ContentValues content = new ContentValues();
+        final String name = mNameEditText.getEditableText().toString().trim();
+        final String breed = mBreedEditText.getEditableText().toString().trim();
+        int weight = -1;
+        try {weight = Integer.parseInt(mWeightEditText.getEditableText().toString().trim());}
+        catch(NumberFormatException err) {
+            Log.d(LOG_TAG, "Invalid weight modified to 0 for " + breed + " " + name);
+            weight = 0;
+        } finally {
+            if (weight < 0) {
+                Log.d(LOG_TAG, breed + " " + name + "had a negative weight. Beefing it up to 0kg.");
+                weight = 0;
+            }
+        }
+        content.put(PetEntry.COLUMN_NAME, name);
+        content.put(PetEntry.COLUMN_BREED, breed);
+        content.put(PetEntry.COLUMN_GENDER, mGender);
+        content.put(PetEntry.COLUMN_WEIGHT, weight);
+        if (db.insert(PetEntry.TABLE_NAME, null, content) < 0) {
+            final String ErrorMsg = String.format("Error inserting the %s %s.", breed, name);
+            Log.d(LOG_TAG, ErrorMsg);
+            Toast.makeText(this, ErrorMsg, Toast.LENGTH_SHORT).show();
+        } else {
+            Toast.makeText(this, "Pet added successfully.", Toast.LENGTH_SHORT).show();
+        }
+        db.close();
+    }
+
+    @Override
+    public void onStop() {
+        mDbHelper.close();
+        super.onStop();
     }
 }
