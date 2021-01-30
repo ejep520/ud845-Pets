@@ -15,13 +15,18 @@
  */
 package com.example.android.pets;
 
+import android.content.ContentValues;
 import android.content.Intent;
+import android.database.sqlite.SQLiteDatabase;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
-import android.view.View;
 
 import androidx.appcompat.app.AppCompatActivity;
+
+import com.example.android.pets.data.PetContract.PetEntry;
+import com.example.android.pets.data.PetDbHelper;
 
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 
@@ -30,10 +35,17 @@ import com.google.android.material.floatingactionbutton.FloatingActionButton;
  */
 public class CatalogActivity extends AppCompatActivity {
 
+    private static final String LOG_TAG = CatalogActivity.class.getSimpleName();
+    private SQLiteDatabase mDb;
+    private PetDbHelper mDbHelper = new PetDbHelper(this);
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_catalog);
+
+        mDb = mDbHelper.getReadableDatabase();
+        Log.d(LOG_TAG, "DB Name: " + mDbHelper.getDatabaseName());
 
         // Setup FAB to open EditorActivity
         FloatingActionButton fab = findViewById(R.id.fab);
@@ -59,11 +71,15 @@ public class CatalogActivity extends AppCompatActivity {
         switch (item.getItemId()) {
             // Respond to a click on the "Insert dummy data" menu option
             case actionInsertDummyData:
-                // Do nothing for now
+                ContentValues values = new ContentValues();
+                values.put(PetEntry.COLUMN_NAME, "Garfield");
+                values.put(PetEntry.COLUMN_BREED, "Tabby");
+                values.put(PetEntry.COLUMN_GENDER, PetEntry.GENDER_MALE);
+                values.put(PetEntry.COLUMN_WEIGHT, 7);
+                mDb.insert(PetEntry.TABLE_NAME,null, values);
                 return true;
-            // Respond to a click on the "Delete all entries" menu option
             case actionDeleteAllEntries:
-                // Do nothing for now
+                mDbHelper.onUpgrade(mDb, 1, 1);
                 return true;
         }
         return super.onOptionsItemSelected(item);
