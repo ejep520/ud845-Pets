@@ -26,6 +26,7 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.widget.TextView;
 
+import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 
 import com.example.android.pets.data.PetContract.PetEntry;
@@ -33,6 +34,7 @@ import com.example.android.pets.data.PetDbHelper;
 
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 
+import java.util.IllegalFormatException;
 import java.util.Locale;
 
 /**
@@ -62,13 +64,6 @@ public class CatalogActivity extends AppCompatActivity {
         super.onStart();
         mDbHelper = new PetDbHelper(this);
         mDb = mDbHelper.getWritableDatabase();
-        Log.d(LOG_TAG, "DB Name: " + mDbHelper.getDatabaseName());
-        String[] arguments = {PetEntry.TABLE_NAME, "table"};
-        Cursor cursor = mDb.query("sqlite_master", null,"name==? AND type==?",arguments,null, null, null);
-        if (cursor.getCount() < 1) {
-            mDbHelper.onCreate(mDb);
-        }
-        cursor.close();
     }
 
     @Override
@@ -86,7 +81,7 @@ public class CatalogActivity extends AppCompatActivity {
     }
 
     @Override
-    public boolean onOptionsItemSelected(MenuItem item) {
+    public boolean onOptionsItemSelected(@NonNull MenuItem item) {
         final int actionInsertDummyData = R.id.action_insert_dummy_data;
         final int actionDeleteAllEntries = R.id.action_delete_all_entries;
         // User clicked on a menu option in the app bar overflow menu
@@ -111,24 +106,52 @@ public class CatalogActivity extends AppCompatActivity {
     }
 
     private void displayDatabaseInfo() {
-        Locale locale = getResources().getConfiguration().getLocales().get(0);
-        try (Cursor cursor = mDb.query(
+        final String divider = " - ";
+        final StringBuilder sb = new StringBuilder(PetEntry.COLUMN_NAME + divider +
+                PetEntry.COLUMN_BREED + divider + PetEntry.COLUMN_GENDER + divider +
+                PetEntry.COLUMN_WEIGHT + "\n");
+        final Locale locale = getResources().getConfiguration().getLocales().get(0);
+        final TextView displayView = findViewById(R.id.text_view_pet);
+        Cursor cursor = mDb.query(
                 PetEntry.TABLE_NAME,
                 null,
                 null,
                 null,
                 null,
                 null,
-                null)) {
-            TextView displayView = findViewById(R.id.text_view_pet);
-            displayView.setText(String.format(locale, "Number of rows in pets DB table: %d", cursor.getCount()));
-        } catch (IllegalArgumentException err) {
+                null);
+        try {
+            displayView.setText(String.format(locale, "Number of rows in pets DB table: %d\n\n", cursor.getCount()));
+        } catch (IllegalFormatException err) {
             Log.d(LOG_TAG, err.getLocalizedMessage());
             err.printStackTrace();
         }
+        cursor.moveToPosition(-1);
+        final int namePos = cursor.getColumnIndex(PetEntry.COLUMN_NAME);
+        final int breedPos = cursor.getColumnIndex(PetEntry.COLUMN_BREED);
+        final int genderPos = cursor.getColumnIndex(PetEntry.COLUMN_GENDER);
+        final int weightPos = cursor.getColumnIndex(PetEntry.COLUMN_WEIGHT);
+        while (cursor.moveToNext()) {
+            sb.append("\n").append(cursor.getString(namePos)).append(divider);
+            sb.append(cursor.getString(breedPos)).append(divider);
+            switch (cursor.getInt(genderPos)) {
+                case PetEntry.GENDER_MALE:
+                    sb.append("Male").append(divider);
+                    break;
+                case PetEntry.GENDER_FEMALE:
+                    sb.append("Female").append(divider);
+                    break;
+                default:
+                    sb.append("Weird").append(divider);
+                    break;
+            }
+            sb.append(cursor.getInt(weightPos));
+        }
+        displayView.append(sb.toString());
+        cursor.close();
     }
 
-    // If you open it, close it. You weren't raised in a barn. If you were, refer to the first sentence.
+    // If you open it, close it. You probably weren't raised in a barn. If you were, refer to the first sentence.
     @Override
     protected void onStop() {
         mDb.close();

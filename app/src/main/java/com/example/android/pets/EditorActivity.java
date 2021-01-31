@@ -179,7 +179,7 @@ public class EditorActivity extends AppCompatActivity {
 
     @Override
     public void onStop() {
-        mDbHelper.close();
         super.onStop();
+        mDbHelper.close();
     }
 }

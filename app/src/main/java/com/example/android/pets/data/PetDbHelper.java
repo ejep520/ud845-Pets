@@ -10,6 +10,9 @@ import androidx.annotation.NonNull;
 
 import com.example.android.pets.data.PetContract.PetEntry;
 
+/**
+ * @see SQLiteOpenHelper
+ */
 public class PetDbHelper extends SQLiteOpenHelper {
 
     private static final String LOG_TAG = PetDbHelper.class.getSimpleName();
@@ -17,9 +20,6 @@ public class PetDbHelper extends SQLiteOpenHelper {
     private static final int DATABASE_VERSION = 1;
     private static final String DROP_TABLE = "DROP TABLE IF EXISTS " + PetEntry.TABLE_NAME;
 
-    /**
-     * @see SQLiteOpenHelper
-     */
     public PetDbHelper(@NonNull Context context) {
         super(context, DATABASE_NAME, null, DATABASE_VERSION);
     }
