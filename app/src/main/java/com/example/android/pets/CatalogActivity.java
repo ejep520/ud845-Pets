@@ -15,19 +15,23 @@
  */
 package com.example.android.pets;
 
+import android.content.ContentUris;
 import android.content.ContentValues;
+import android.content.Context;
 import android.content.Intent;
 import android.database.Cursor;
-import android.database.sqlite.SQLiteDatabase;
+import android.net.Uri;
 import android.os.Bundle;
 import android.view.Menu;
 import android.view.MenuItem;
-import android.widget.TextView;
+import android.view.View;
+import android.widget.ListView;
+import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
 
+import com.example.android.pets.data.PetAdapter;
 import com.example.android.pets.data.PetContract.PetEntry;
-import com.example.android.pets.data.PetDbHelper;
 
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 
@@ -38,13 +42,18 @@ import java.util.Locale;
  */
 public class CatalogActivity extends AppCompatActivity {
 
-    /** Database helper that will provide us access to the database */
-    private PetDbHelper mDbHelper;
+    private Locale mLOCALE;
+    private ListView mListView;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_catalog);
+
+        mLOCALE = getResources().getConfiguration().getLocales().get(0);
+        mListView = findViewById(R.id.list_view_pet);
+        View emptyView = findViewById(R.id.empty_view);
+        mListView.setEmptyView(emptyView);
 
         // Setup FAB to open EditorActivity
         FloatingActionButton fab = findViewById(R.id.fab);
@@ -55,7 +64,6 @@ public class CatalogActivity extends AppCompatActivity {
 
         // To access our database, we instantiate our subclass of SQLiteOpenHelper
         // and pass the context, which is the current activity.
-        mDbHelper = new PetDbHelper(this);
     }
 
     @Override
@@ -69,10 +77,6 @@ public class CatalogActivity extends AppCompatActivity {
      * the pets database.
      */
     private void displayDatabaseInfo() {
-        // Create and/or open a database to read from it
-        final String divider = " - ";
-        SQLiteDatabase db = mDbHelper.getReadableDatabase();
-
         // Define a projection that specifies which columns from the database
         // you will actually use after this query.
         String[] projection = {
@@ -82,62 +86,11 @@ public class CatalogActivity extends AppCompatActivity {
                 PetEntry.COLUMN_PET_GENDER,
                 PetEntry.COLUMN_PET_WEIGHT };
 
-        // Perform a query on the pets table
-        Cursor cursor = db.query(
-                PetEntry.TABLE_NAME,   // The table to query
-                projection,            // The columns to return
-                null,                  // The columns for the WHERE clause
-                null,                  // The values for the WHERE clause
-                null,                  // Don't group the rows
-                null,                  // Don't filter by row groups
-                null);                   // The sort order
-
-        TextView displayView = findViewById(R.id.text_view_pet);
-
-        //noinspection TryFinallyCanBeTryWithResources
-        try {
-            // Create a header in the Text View that looks like this:
-            //
-            // The pets table contains <number of rows in Cursor> pets.
-            // _id - name - breed - gender - weight
-            //
-            // In the while loop below, iterate through the rows of the cursor and display
-            // the information from each column in this order.
-            Locale locale = getResources().getConfiguration().getLocales().get(0);
-            displayView.setText(String.format(locale, "The pets table contains %d pets.\n\n", cursor.getCount()));
-            displayView.append(PetEntry._ID + divider +
-                    PetEntry.COLUMN_PET_NAME + divider +
-                    PetEntry.COLUMN_PET_BREED + divider +
-                    PetEntry.COLUMN_PET_GENDER + divider +
-                    PetEntry.COLUMN_PET_WEIGHT + "\n");
-
-            // Figure out the index of each column
-            final int idColumnIndex = cursor.getColumnIndex(PetEntry._ID);
-            final int nameColumnIndex = cursor.getColumnIndex(PetEntry.COLUMN_PET_NAME);
-            final int breedColumnIndex = cursor.getColumnIndex(PetEntry.COLUMN_PET_BREED);
-            final int genderColumnIndex = cursor.getColumnIndex(PetEntry.COLUMN_PET_GENDER);
-            final int weightColumnIndex = cursor.getColumnIndex(PetEntry.COLUMN_PET_WEIGHT);
-
-            // Iterate through all the returned rows in the cursor
-            while (cursor.moveToNext()) {
-                // Use that index to extract the String or Int value of the word
-                // at the current row the cursor is on.
-                int currentID = cursor.getInt(idColumnIndex);
-                String currentName = cursor.getString(nameColumnIndex);
-                String currentBreed = cursor.getString(breedColumnIndex);
-                int currentGender = cursor.getInt(genderColumnIndex);
-                int currentWeight = cursor.getInt(weightColumnIndex);
-                // Display the values from each column of the current row in the cursor in the TextView
-                displayView.append(("\n" + currentID + " - " +
-                        currentName + " - " +
-                        currentBreed + " - " +
-                        currentGender + " - " +
-                        currentWeight));
-            }
-        } finally {
-            // Always close the cursor when you're done reading from it. This releases all its
-            // resources and makes it invalid.
-            cursor.close();
+        Cursor cursor = getContentResolver().query(PetEntry.CONTENT_URI, projection, null, null, null);
+        if (mListView.getAdapter() == null) {
+            mListView.setAdapter(new PetAdapter(this, cursor));
+        } else {
+            ((PetAdapter) mListView.getAdapter()).changeCursor(cursor);
         }
     }
 
@@ -145,9 +98,6 @@ public class CatalogActivity extends AppCompatActivity {
      * Helper method to insert hardcoded pet data into the database. For debugging purposes only.
      */
     private void insertPet() {
-        // Gets the database in write mode
-        SQLiteDatabase db = mDbHelper.getWritableDatabase();
-
         // Create a ContentValues object where column names are the keys,
         // and Toto's pet attributes are the values.
         ContentValues values = new ContentValues();
@@ -163,7 +113,9 @@ public class CatalogActivity extends AppCompatActivity {
         // this is set to "null", then the framework will not insert a row when
         // there are no values).
         // The third argument is the ContentValues object containing the info for Toto.
-        long newRowId = db.insert(PetEntry.TABLE_NAME, null, values);
+        final Uri returnUri = getContentResolver().insert(PetEntry.CONTENT_URI, values);
+        long returnId = ContentUris.parseId(returnUri);
+        AddPetResolution(returnId, this, mLOCALE);
     }
 
     @Override
@@ -187,15 +139,27 @@ public class CatalogActivity extends AppCompatActivity {
                 return true;
             // Respond to a click on the "Delete all entries" menu option
             case actionDeleteAllEntries:
-                // Do nothing for now
+                int deletedRows = getContentResolver().delete(PetEntry.CONTENT_URI, null, null);
+                Toast.makeText(
+                        this,
+                        String.format(
+                            mLOCALE,
+                            getString(R.string.pet_deletion_finished),
+                            deletedRows),
+                        Toast.LENGTH_SHORT)
+                    .show();
+                displayDatabaseInfo();
                 return true;
+            default:
+                break;
         }
         return super.onOptionsItemSelected(item);
     }
-
-    @Override
-    protected void onStop() {
-        super.onStop();
-        mDbHelper.close();
+    public static void AddPetResolution(long idLoc, Context context, Locale locale) {
+        if (idLoc < 0) {
+            Toast.makeText(context, R.string.pet_insertion_failed, Toast.LENGTH_SHORT).show();
+        } else {
+            Toast.makeText(context, String.format(locale, context.getString(R.string.pet_inserted_successfully_format), idLoc), Toast.LENGTH_SHORT).show();
+        }
     }
 }

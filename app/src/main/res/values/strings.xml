@@ -10,7 +10,7 @@
      See the License for the specific language governing permissions and
      limitations under the License.
 -->
-<resources>
+<resources xmlns:tools="http://schemas.android.com/tools">
     <!-- Name for the application [CHAR LIMIT=12] -->
     <string name="app_name">Pets</string>
 
@@ -58,4 +58,17 @@
 
     <!-- Label for dropdown menu option if the pet is female [CHAR LIMIT=20] -->
     <string name="gender_female">Female</string>
+
+    <!-- Content description for the Floating Activity Button -->
+    <string name="content_description_fab">Dog paw</string>
+
+    <!-- Toast messages [CHAR LIMIT=30] -->
+    <string name="pet_inserted_successfully_format">Pet inserted successfully. New id is %d.</string>
+    <string name="pet_insertion_failed">Failed to insert the pet.</string>
+    <string name="pet_deletion_finished">%d pet(s) deleted.</string>
+
+    <!-- Empty layout strings -->
+    <string name="empty_view_title_text" tools:ignore="TypographyEllipsis">It\'s a but lonely here...</string>
+    <string name="empty_view_subtitle_text">Get started by adding a pet.</string>
+    <string name="empty_content_description">Empty doghouse</string>
 </resources>
