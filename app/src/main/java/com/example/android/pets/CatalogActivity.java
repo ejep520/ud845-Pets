@@ -28,7 +28,12 @@ import android.view.View;
 import android.widget.ListView;
 import android.widget.Toast;
 
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.loader.app.LoaderManager;
+import androidx.loader.content.CursorLoader;
+import androidx.loader.content.Loader;
 
 import com.example.android.pets.data.PetAdapter;
 import com.example.android.pets.data.PetContract.PetEntry;
@@ -40,10 +45,11 @@ import java.util.Locale;
 /**
  * Displays list of pets that were entered and stored in the app.
  */
-public class CatalogActivity extends AppCompatActivity {
+public class CatalogActivity extends AppCompatActivity implements LoaderManager.LoaderCallbacks<Cursor> {
 
     private Locale mLOCALE;
     private ListView mListView;
+    private final int PET_LOADER = 0;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -55,6 +61,9 @@ public class CatalogActivity extends AppCompatActivity {
         View emptyView = findViewById(R.id.empty_view);
         mListView.setEmptyView(emptyView);
 
+        LoaderManager.enableDebugLogging(true);
+
+
         // Setup FAB to open EditorActivity
         FloatingActionButton fab = findViewById(R.id.fab);
         fab.setOnClickListener(view -> {
@@ -64,34 +73,9 @@ public class CatalogActivity extends AppCompatActivity {
 
         // To access our database, we instantiate our subclass of SQLiteOpenHelper
         // and pass the context, which is the current activity.
-    }
 
-    @Override
-    protected void onStart() {
-        super.onStart();
-        displayDatabaseInfo();
-    }
-
-    /**
-     * Temporary helper method to display information in the onscreen TextView about the state of
-     * the pets database.
-     */
-    private void displayDatabaseInfo() {
-        // Define a projection that specifies which columns from the database
-        // you will actually use after this query.
-        String[] projection = {
-                PetEntry._ID,
-                PetEntry.COLUMN_PET_NAME,
-                PetEntry.COLUMN_PET_BREED,
-                PetEntry.COLUMN_PET_GENDER,
-                PetEntry.COLUMN_PET_WEIGHT };
-
-        Cursor cursor = getContentResolver().query(PetEntry.CONTENT_URI, projection, null, null, null);
-        if (mListView.getAdapter() == null) {
-            mListView.setAdapter(new PetAdapter(this, cursor));
-        } else {
-            ((PetAdapter) mListView.getAdapter()).changeCursor(cursor);
-        }
+        mListView.setAdapter(new PetAdapter(this, null));
+        LoaderManager.getInstance(this).initLoader(PET_LOADER, null, this);
     }
 
     /**
@@ -135,7 +119,7 @@ public class CatalogActivity extends AppCompatActivity {
             // Respond to a click on the "Insert dummy data" menu option
             case actionInsertDummyData:
                 insertPet();
-                displayDatabaseInfo();
+                // displayDatabaseInfo();
                 return true;
             // Respond to a click on the "Delete all entries" menu option
             case actionDeleteAllEntries:
@@ -148,7 +132,7 @@ public class CatalogActivity extends AppCompatActivity {
                             deletedRows),
                         Toast.LENGTH_SHORT)
                     .show();
-                displayDatabaseInfo();
+                // displayDatabaseInfo();
                 return true;
             default:
                 break;
@@ -161,5 +145,36 @@ public class CatalogActivity extends AppCompatActivity {
         } else {
             Toast.makeText(context, String.format(locale, context.getString(R.string.pet_inserted_successfully_format), idLoc), Toast.LENGTH_SHORT).show();
         }
+    }
+
+    @NonNull
+    @Override
+    public Loader<Cursor> onCreateLoader(int id, @Nullable Bundle args) {
+        String[] projection = {
+                PetEntry._ID,
+                PetEntry.COLUMN_PET_NAME,
+                PetEntry.COLUMN_PET_BREED
+        };
+        if (id == PET_LOADER) {
+            return new CursorLoader(
+                    this,
+                    PetEntry.CONTENT_URI,
+                    projection,
+                    null,
+                    null,
+                    null
+            );
+        }
+        throw new IllegalArgumentException("Unrecognized ID argument.");
+    }
+
+    @Override
+    public void onLoadFinished(@NonNull Loader<Cursor> loader, Cursor data) {
+        ((PetAdapter)mListView.getAdapter()).changeCursor(data);
+    }
+
+    @Override
+    public void onLoaderReset(@NonNull Loader<Cursor> loader) {
+        ((PetAdapter)mListView.getAdapter()).changeCursor(null);
     }
 }
