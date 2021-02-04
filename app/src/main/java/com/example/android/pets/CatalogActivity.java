@@ -50,7 +50,8 @@ import java.util.Locale;
 /**
  * Displays list of pets that were entered and stored in the app.
  */
-public class CatalogActivity extends AppCompatActivity implements LoaderManager.LoaderCallbacks<Cursor> {
+public class CatalogActivity extends AppCompatActivity
+        implements LoaderManager.LoaderCallbacks<Cursor> {
 
     private Locale mLOCALE;
     private ListView mListView;
@@ -134,7 +135,11 @@ public class CatalogActivity extends AppCompatActivity implements LoaderManager.
                 return true;
             // Respond to a click on the "Delete all entries" menu option
             case actionDeleteAllEntries:
-                int deletedRows = getContentResolver().delete(PetEntry.CONTENT_URI, null, null);
+                int deletedRows = getContentResolver()
+                        .delete(
+                                PetEntry.CONTENT_URI,
+                                null,
+                                null);
                 Toast.makeText(
                         this,
                         String.format(
@@ -153,7 +158,16 @@ public class CatalogActivity extends AppCompatActivity implements LoaderManager.
         if (idLoc < 0) {
             Toast.makeText(context, R.string.pet_insertion_failed, Toast.LENGTH_SHORT).show();
         } else {
-            Toast.makeText(context, String.format(locale, context.getString(R.string.pet_inserted_successfully_format), idLoc), Toast.LENGTH_SHORT).show();
+            Toast
+                    .makeText(
+                            context,
+                            String
+                                    .format(
+                                            locale,
+                                            context.getString(R.string.pet_inserted_successfully_format),
+                                            idLoc),
+                            Toast.LENGTH_SHORT)
+                    .show();
         }
     }
 

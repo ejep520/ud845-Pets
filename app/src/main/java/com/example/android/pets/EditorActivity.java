@@ -18,14 +18,13 @@ package com.example.android.pets;
 import android.annotation.SuppressLint;
 import android.content.ContentUris;
 import android.content.ContentValues;
+import android.content.DialogInterface;
 import android.database.Cursor;
 import android.net.Uri;
 import android.os.Bundle;
 import android.text.TextUtils;
-import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
-import android.view.MotionEvent;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
@@ -35,6 +34,7 @@ import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.NavUtils;
 import androidx.loader.app.LoaderManager;
@@ -43,31 +43,36 @@ import androidx.loader.content.Loader;
 
 import com.example.android.pets.data.PetContract.PetEntry;
 
-import java.util.List;
-
 /**
  * Allows user to create a new pet or edit an existing one.
  */
-public class EditorActivity extends AppCompatActivity implements LoaderManager.LoaderCallbacks<Cursor> {
+public class EditorActivity extends AppCompatActivity
+        implements LoaderManager.LoaderCallbacks<Cursor> {
 
     private static final int EXISTING_PET_LOADER = 0;
 
-    /** EditText field to enter the pet's name */
+    /**
+     * EditText field to enter the pet's name
+     */
     private EditText mNameEditText;
 
-    /** EditText field to enter the pet's breed */
+    /**
+     * EditText field to enter the pet's breed
+     */
     private EditText mBreedEditText;
 
-    /** EditText field to enter the pet's weight */
+    /**
+     * EditText field to enter the pet's weight
+     */
     private EditText mWeightEditText;
 
-    /** EditText field to enter the pet's gender */
+    /**
+     * EditText field to enter the pet's gender
+     */
     private Spinner mGenderSpinner;
 
     private boolean mEditorMode = false;
     private long mEditorId = 0;
-
-    private static final String LOG_TAG = EditorActivity.class.getSimpleName();
 
     /**
      * Gender of the pet. The possible valid values are in the PetContract.java file:
@@ -75,7 +80,7 @@ public class EditorActivity extends AppCompatActivity implements LoaderManager.L
      * {@link PetEntry#GENDER_FEMALE}.
      */
     private int mGender = PetEntry.GENDER_UNKNOWN;
-    private Uri mCurrentUri;
+    private Uri mCurrentUri = null;
     private boolean mPetHasChanged = false;
 
     private final View.OnTouchListener mTouchListener = (v, event) -> {
@@ -106,8 +111,16 @@ public class EditorActivity extends AppCompatActivity implements LoaderManager.L
         if (mCurrentUri != null) {
             mEditorMode = true;
             this.setTitle(R.string.pet_editor_title);
-            LoaderManager.getInstance(this).initLoader(EXISTING_PET_LOADER, null, this);
+            mEditorId = ContentUris.parseId(mCurrentUri);
+            LoaderManager
+                    .getInstance(this)
+                    .initLoader(
+                            EXISTING_PET_LOADER,
+                            null,
+                            this);
             LoaderManager.enableDebugLogging(true);
+        } else {
+            invalidateOptionsMenu();
         }
     }
 
@@ -117,8 +130,11 @@ public class EditorActivity extends AppCompatActivity implements LoaderManager.L
     private void setupSpinner() {
         // Create adapter for spinner. The list options are from the String array it will use
         // the spinner will use the default layout
-        ArrayAdapter<CharSequence> genderSpinnerAdapter = ArrayAdapter.createFromResource(this,
-                R.array.array_gender_options, android.R.layout.simple_spinner_item);
+        ArrayAdapter<CharSequence> genderSpinnerAdapter = ArrayAdapter
+                .createFromResource(
+                        this,
+                        R.array.array_gender_options,
+                        android.R.layout.simple_spinner_item);
 
         // Specify dropdown layout style - simple list view with 1 item per line
         genderSpinnerAdapter.setDropDownViewResource(android.R.layout.simple_dropdown_item_1line);
@@ -173,11 +189,19 @@ public class EditorActivity extends AppCompatActivity implements LoaderManager.L
         Uri returnedUri = getContentResolver().insert(PetEntry.CONTENT_URI, values);
         long returnedId = Long.parseLong(returnedUri.getLastPathSegment());
         // Show a toast message depending on whether or not the insertion was successful
-        CatalogActivity.AddPetResolution(returnedId, this, getResources().getConfiguration().getLocales().get(0));
+        CatalogActivity.AddPetResolution(
+                returnedId,
+                this,
+                getResources()
+                        .getConfiguration()
+                        .getLocales()
+                        .get(0));
     }
 
     private void updatePet() {
-        if (!mPetHasChanged) {return;}
+        if (!mPetHasChanged) {
+            return;
+        }
         String nameString = mNameEditText.getText().toString().trim();
         String breedString = mBreedEditText.getText().toString().trim();
         int weightInt = Integer.parseInt(mWeightEditText.getText().toString().trim());
@@ -188,16 +212,42 @@ public class EditorActivity extends AppCompatActivity implements LoaderManager.L
         values.put(PetEntry.COLUMN_PET_GENDER, mGender);
         values.put(PetEntry.COLUMN_PET_WEIGHT, weightInt);
 
-        int returnedValue = getContentResolver().update(ContentUris.withAppendedId(PetEntry.CONTENT_URI, mEditorId), values, null, null);
+        int returnedValue = getContentResolver()
+                .update(ContentUris
+                                .withAppendedId(
+                                        PetEntry.CONTENT_URI,
+                                        mEditorId),
+                        values,
+                        null,
+                        null);
         switch (returnedValue) {
             case 0:
-                Toast.makeText(this, "No records were edited.", Toast.LENGTH_SHORT).show();
+                Toast
+                        .makeText(
+                                this,
+                                "No records were edited.",
+                                Toast.LENGTH_SHORT)
+                        .show();
                 break;
             case 1:
-                Toast.makeText(this, "A record was edited.", Toast.LENGTH_SHORT).show();
+                Toast
+                        .makeText(
+                                this,
+                                "A record was edited.",
+                                Toast.LENGTH_SHORT)
+                        .show();
                 break;
             default:
-                Toast.makeText(this, String.format(getResources().getConfiguration().getLocales().get(0), "%d records were edited.", returnedValue), Toast.LENGTH_SHORT).show();
+                Toast.makeText(
+                        this,
+                        String.format(
+                                getResources()
+                                        .getConfiguration()
+                                        .getLocales().get(0),
+                                "%d records were edited.",
+                                returnedValue),
+                        Toast.LENGTH_SHORT)
+                        .show();
                 break;
         }
     }
@@ -207,6 +257,18 @@ public class EditorActivity extends AppCompatActivity implements LoaderManager.L
         // Inflate the menu options from the res/menu/menu_editor.xml file.
         // This adds menu items to the app bar.
         getMenuInflater().inflate(R.menu.menu_editor, menu);
+        return true;
+    }
+
+    @Override
+    public boolean onPrepareOptionsMenu(Menu menu) {
+        super.onPrepareOptionsMenu(menu);
+        if (mCurrentUri == null) {
+            MenuItem item = menu.findItem(R.id.action_delete);
+            if (item != null) {
+                item.setVisible(false);
+            }
+        }
         return true;
     }
 
@@ -229,15 +291,39 @@ public class EditorActivity extends AppCompatActivity implements LoaderManager.L
                 return true;
             // Respond to a click on the "Delete" menu option
             case actionDelete:
-                // Do nothing for now
+                deletePet();
                 return true;
             // Respond to a click on the "Up" arrow button in the app bar
             case android.R.id.home:
                 // Navigate back to parent activity (CatalogActivity)
-                NavUtils.navigateUpFromSameTask(this);
+                if (!mPetHasChanged) {
+                    NavUtils.navigateUpFromSameTask(this);
+                } else {
+                    DialogInterface.OnClickListener discardButtonClickListener =
+                            (dialogInterface, i) -> NavUtils
+                                    .navigateUpFromSameTask(EditorActivity.this);
+                    showUnsavedDialog(discardButtonClickListener);
+                }
                 return true;
         }
         return super.onOptionsItemSelected(item);
+    }
+
+    private void deletePet() {
+        if (ContentUris.parseId(mCurrentUri) < 1) {
+            return;
+        }
+        int deletedPets = getContentResolver().delete(mCurrentUri, null, null);
+        Toast.makeText(this,
+                String.format(
+                        getResources()
+                        .getConfiguration()
+                        .getLocales()
+                        .get(0),
+                        getString(R.string.pet_deletion_finished),
+                        deletedPets),
+                Toast.LENGTH_SHORT)
+                .show();
     }
 
     @NonNull
@@ -259,7 +345,9 @@ public class EditorActivity extends AppCompatActivity implements LoaderManager.L
     @SuppressLint("SetTextI18n")
     @Override
     public void onLoadFinished(@NonNull Loader<Cursor> loader, Cursor data) {
-        if ((data == null) || (data.getCount() < 1) || (!data.moveToFirst())) { return; }
+        if ((data == null) || (data.getCount() < 1) || (!data.moveToFirst())) {
+            return;
+        }
         final int nameColumnIndex = data.getColumnIndex(PetEntry.COLUMN_PET_NAME);
         final int breedColumnIndex = data.getColumnIndex(PetEntry.COLUMN_PET_BREED);
         final int weightColumnIndex = data.getColumnIndex(PetEntry.COLUMN_PET_WEIGHT);
@@ -277,5 +365,29 @@ public class EditorActivity extends AppCompatActivity implements LoaderManager.L
         mBreedEditText.setText("");
         mWeightEditText.setText("");
         mGenderSpinner.setSelection(0);
+    }
+
+    private void showUnsavedDialog(DialogInterface.OnClickListener l) {
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setMessage(R.string.unsaved_changes_dialog_msg);
+        builder.setPositiveButton(R.string.discard, l);
+        builder.setNegativeButton(R.string.keep_editing, (dialog, id) -> {
+            if (dialog != null) {
+                dialog.dismiss();
+            }
+        });
+        AlertDialog alert = builder.create();
+        alert.show();
+    }
+
+    @Override
+    public void onBackPressed() {
+        if (!mPetHasChanged) {
+            super.onBackPressed();
+            return;
+        }
+        DialogInterface.OnClickListener discardButtonClickListener =
+                (dialogInterface, i) -> finish();
+        showUnsavedDialog(discardButtonClickListener);
     }
 }

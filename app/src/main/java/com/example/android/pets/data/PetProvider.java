@@ -43,18 +43,35 @@ public class PetProvider extends ContentProvider {
 
     @Nullable
     @Override
-    public Cursor query(@NonNull Uri uri, @Nullable String[] projection, @Nullable String selection, @Nullable String[] selectionArgs,
+    public Cursor query(@NonNull Uri uri, @Nullable String[] projection,
+                        @Nullable String selection, @Nullable String[] selectionArgs,
                         @Nullable String sortOrder) {
         SQLiteDatabase db = mDbHelper.getReadableDatabase();
         Cursor cursor;
         switch (matcher.match(uri)) {
             case PETS:
-                cursor = db.query(PetContract.PetEntry.TABLE_NAME, projection, null, null, null, null, null);
+                cursor = db
+                        .query(
+                                PetContract.PetEntry.TABLE_NAME,
+                                projection,
+                                null,
+                                null,
+                                null,
+                                null,
+                                null);
                 break;
             case PET_ID:
                 selection = PetContract.PetEntry._ID + "=?";
                 selectionArgs = new String[]{String.valueOf(ContentUris.parseId(uri))};
-                cursor = db.query(PetContract.PetEntry.TABLE_NAME, projection, selection, selectionArgs, null, null, sortOrder);
+                cursor = db
+                        .query(
+                                PetContract.PetEntry.TABLE_NAME,
+                                projection,
+                                selection,
+                                selectionArgs,
+                                null,
+                                null,
+                                sortOrder);
                 break;
             default:
                 throw new IllegalArgumentException("Cannot query unknown URI " + uri);
@@ -89,7 +106,8 @@ public class PetProvider extends ContentProvider {
     }
 
     @Override
-    public int delete(@NonNull Uri uri, @Nullable String selection, @Nullable String[] selectionArgs) {
+    public int delete(@NonNull Uri uri, @Nullable String selection,
+                      @Nullable String[] selectionArgs) {
         SQLiteDatabase db = mDbHelper.getWritableDatabase();
         int returnValue;
         switch (matcher.match(uri)) {
@@ -98,7 +116,8 @@ public class PetProvider extends ContentProvider {
                     returnValue = db.delete(PetEntry.TABLE_NAME, null, null);
                 } else if (TextUtils.isEmpty(selection) ^ (selectionArgs == null)) {
                     db.close();
-                    throw new IllegalArgumentException("selection and selectionArgs must both be filled or not null.");
+                    throw new IllegalArgumentException(
+                            "selection and selectionArgs must both be filled or not null.");
                 } else {
                     returnValue = db.delete(PetEntry.TABLE_NAME, selection, selectionArgs);
                 }
@@ -107,10 +126,15 @@ public class PetProvider extends ContentProvider {
                 if (TextUtils.isEmpty(selection) && (selectionArgs == null)) {
                     List<String> uriParts = uri.getPathSegments();
                     selectionArgs = new String[]{uriParts.get(uriParts.toArray().length - 1)};
-                    returnValue = db.delete(PetEntry.TABLE_NAME, "_id=?", selectionArgs);
+                    returnValue = db
+                            .delete(
+                                    PetEntry.TABLE_NAME,
+                                    "_id=?",
+                                    selectionArgs);
                 } else {
                     db.close();
-                    throw new IllegalArgumentException("If a pet ID is included, all other parameters must be null.");
+                    throw new IllegalArgumentException(
+                            "If a pet ID is included, all other parameters must be null.");
                 }
                 break;
             default:
