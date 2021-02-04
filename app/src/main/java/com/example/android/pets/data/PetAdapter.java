@@ -14,8 +14,9 @@ import static com.example.android.pets.data.PetContract.PetEntry;
 
 public class PetAdapter extends CursorAdapter {
 
+
     public PetAdapter(Context context, Cursor c) {
-        super(context, c, 0);
+        super(context, c, CursorAdapter.FLAG_REGISTER_CONTENT_OBSERVER);
     }
 
     @Override
@@ -31,6 +32,7 @@ public class PetAdapter extends CursorAdapter {
         // Get the data we need to populate with.
         String petNameString = cursor.getString(cursor.getColumnIndex(PetEntry.COLUMN_PET_NAME));
         String petBreedString = cursor.getString(cursor.getColumnIndex(PetEntry.COLUMN_PET_BREED));
+        long petId = cursor.getLong(cursor.getColumnIndex(PetEntry._ID));
         // Populate the TextViews with the data.
         petNameTv.setText(petNameString);
         petBreedTv.setText(petBreedString);

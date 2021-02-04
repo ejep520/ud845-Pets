@@ -71,4 +71,6 @@
     <string name="empty_view_title_text" tools:ignore="TypographyEllipsis">It\'s a but lonely here...</string>
     <string name="empty_view_subtitle_text">Get started by adding a pet.</string>
     <string name="empty_content_description">Empty doghouse</string>
+
+    <string name="pet_editor_title">Edit a Pet</string>
 </resources>

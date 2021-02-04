@@ -59,7 +59,7 @@ public class PetProvider extends ContentProvider {
             default:
                 throw new IllegalArgumentException("Cannot query unknown URI " + uri);
         }
-        // db.close();
+        cursor.setNotificationUri(getContext().getContentResolver(), uri);
         return cursor;
     }
 
@@ -118,6 +118,9 @@ public class PetProvider extends ContentProvider {
                 throw new IllegalArgumentException("The uri provided could not be parsed. " + uri);
         }
         db.close();
+        if (returnValue > 0) {
+            getContext().getContentResolver().notifyChange(uri, null);
+        }
         return returnValue;
     }
 
@@ -143,12 +146,21 @@ public class PetProvider extends ContentProvider {
                 returnValue = 0;
         }
         db.close();
+        if (returnValue > 0) {
+            getContext().getContentResolver().notifyChange(uri, null);
+        }
         return returnValue;
     }
 
     private Uri insertPet(Uri uri, ContentValues values) {
         long newRow;
-        if (TextUtils.isEmpty(values.getAsString(PetEntry.COLUMN_PET_NAME))) {
+        if (values == null) {
+            newRow = -1;
+            Log.d(LOG_TAG, "A null value was passed for the values.");
+        } else if (values.keySet().isEmpty()) {
+            newRow = -1;
+            Log.d(LOG_TAG, "An empty values package was passed.");
+        } else if (TextUtils.isEmpty(values.getAsString(PetEntry.COLUMN_PET_NAME))) {
             newRow = -1;
             Log.d(LOG_TAG, "Pets require names.");
         } else if (TextUtils.isEmpty(values.getAsString(PetEntry.COLUMN_PET_BREED))) {
@@ -166,10 +178,13 @@ public class PetProvider extends ContentProvider {
             newRow = db.insert(PetEntry.TABLE_NAME, null, values);
             db.close();
         }
+        if (newRow > 0) {
+            getContext().getContentResolver().notifyChange(uri, null);
+        }
         return ContentUris.withAppendedId(uri, newRow);
     }
 
-    protected void onDestroy() {
+    protected void finalize() {
         mDbHelper.close();
     }
 }

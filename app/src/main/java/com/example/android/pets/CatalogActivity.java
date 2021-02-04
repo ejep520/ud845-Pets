@@ -15,16 +15,21 @@
  */
 package com.example.android.pets;
 
+// import android.app.LoaderManager;
 import android.content.ContentUris;
 import android.content.ContentValues;
 import android.content.Context;
+// import android.content.CursorLoader;
 import android.content.Intent;
+// import android.content.Loader;
 import android.database.Cursor;
 import android.net.Uri;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
+import android.widget.AdapterView;
 import android.widget.ListView;
 import android.widget.Toast;
 
@@ -58,11 +63,10 @@ public class CatalogActivity extends AppCompatActivity implements LoaderManager.
 
         mLOCALE = getResources().getConfiguration().getLocales().get(0);
         mListView = findViewById(R.id.list_view_pet);
-        View emptyView = findViewById(R.id.empty_view);
-        mListView.setEmptyView(emptyView);
+        mListView.setEmptyView(findViewById(R.id.empty_view));
+
 
         LoaderManager.enableDebugLogging(true);
-
 
         // Setup FAB to open EditorActivity
         FloatingActionButton fab = findViewById(R.id.fab);
@@ -76,6 +80,14 @@ public class CatalogActivity extends AppCompatActivity implements LoaderManager.
 
         mListView.setAdapter(new PetAdapter(this, null));
         LoaderManager.getInstance(this).initLoader(PET_LOADER, null, this);
+        mListView.setOnItemClickListener((parent, view, position, id) -> {
+            Intent intent = new Intent(CatalogActivity.this, EditorActivity.class);
+            Uri uri = ContentUris.withAppendedId(PetEntry.CONTENT_URI, id);
+            intent.setData(uri);
+            Log.d("OnItemClick", uri.toString());
+            startActivity(intent);
+        });
+
     }
 
     /**
@@ -119,7 +131,6 @@ public class CatalogActivity extends AppCompatActivity implements LoaderManager.
             // Respond to a click on the "Insert dummy data" menu option
             case actionInsertDummyData:
                 insertPet();
-                // displayDatabaseInfo();
                 return true;
             // Respond to a click on the "Delete all entries" menu option
             case actionDeleteAllEntries:
@@ -132,7 +143,6 @@ public class CatalogActivity extends AppCompatActivity implements LoaderManager.
                             deletedRows),
                         Toast.LENGTH_SHORT)
                     .show();
-                // displayDatabaseInfo();
                 return true;
             default:
                 break;
@@ -177,4 +187,5 @@ public class CatalogActivity extends AppCompatActivity implements LoaderManager.
     public void onLoaderReset(@NonNull Loader<Cursor> loader) {
         ((PetAdapter)mListView.getAdapter()).changeCursor(null);
     }
+
 }
